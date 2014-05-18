@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="//code.jquery.com/jquery-1.11.1.js"></script>
+    <title>up?</title>
+    <link rel="stylesheet" type="text/css" href="http://necolas.github.io/normalize.css/3.0.0/normalize.css">
+    <style type='text/css'>
+        html, body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            min-width: 500px;
+            min-height: 500px;
+
+            background-color: #F9F9F9;
+        }
+        #upForm {
+            width: 416px;
+        }
+        h1,#blurb,#result {
+            text-align: center;
+            padding: 15px;
+            margin: 15px;
+        }
+        h1 {
+            font-size: 4em;
+            color: #444;
+        }
+        #blurb,#result {
+            color: #777;
+        }
+        #blurb {
+            font-size: 1.2em;
+        }
+        #result {
+            height: 100px;
+            font-size: 1.1em;
+        }
+        input,button {
+            font-size: 1.5em;
+            color: #555;
+            width: 400px;
+            padding: 5px;
+            box-sizing: content-box;
+        }
+    </style>
+  </head>
+  <body>
+    <form id="upForm">
+      <h1>up?</h1>
+      <div id="blurb">Send us a site and we'll email you when its up</div>
+      <input type="url" name="url" placeholder="url"/>
+      <input type="email" name="email" placeholder="email"/>
+      <button>submit</button>
+      <div id="result"></div>
+    </form>
+    <script>
+      $('#upForm').submit(function (event) {
+          event.preventDefault();
+          var query = $( this ).serialize();
+          var posting = $.post( "?" + query );
+          posting.done(function( data ) {
+            $( "#result" ).empty().append( data );
+          });
+      });
+    </script>
+  </body>
+</html>
