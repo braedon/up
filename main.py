@@ -93,6 +93,10 @@ def construct_app(queue, smtp_host, smtp_port, **kwargs):
                 url)
             send_email(email, subject, message)
 
+    @app.get('/status')
+    def status():
+        return 'OK'
+
     @app.post('/')
     def post():
         url = request.query.url
@@ -109,7 +113,7 @@ def construct_app(queue, smtp_host, smtp_port, **kwargs):
 
     @app.get('/')
     def get():
-        return static_file('up.html', root='')
+        return static_file('index.html', root='')
 
     return app
 
