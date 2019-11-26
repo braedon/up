@@ -1,0 +1,10 @@
+# bottle==0.12.17
+# The way Bottle currently handles error doesn't allow logging
+# middleware to log them correctly, so used a patched version.
+# NOTE: This won't override a previously installed version of Bottle,
+#       so remove first with:
+# 		> pip3 uninstall bottle
+git+git://github.com/braedon/bottle@improve-wsgi-error-handling-012#egg=bottle
+click==7.0
+jog==0.1.1
+requests==v2.22.0
