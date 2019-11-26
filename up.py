@@ -5,10 +5,11 @@ import time
 import logging
 import smtplib
 from email.message import EmailMessage
-from email.headerregistry import Address
 
 from workQueue import WorkQueue
 from timeQueue import TimeQueue
+
+log = logging.getLogger(__name__)
 
 timeout = 5
 tries = 5
@@ -85,6 +86,7 @@ def queue_url(email, url, tries):
             url)
         send_email(email, subject, message)
 
+
 @post('/')
 def post():
     url = request.query.url
@@ -99,9 +101,11 @@ def post():
     else:
         return 'Please specify both a url and an email address.'
 
+
 @get('/')
 def get():
     return static_file('up.html', root='')
+
 
 if __name__ == "__main__":
     queue.start()
