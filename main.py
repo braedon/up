@@ -58,28 +58,21 @@ def construct_app(queue, smtp_host, smtp_port, **kwargs):
                 if s >= 500 and s < 600:
                     queue_url(email, url, tries)
                 elif s >= 400 and s < 500:
-                    subject = 'Up Service: URL {} responding with a client error'.format(
-                        url)
-                    message = 'URL {} is responding with the status {} which indicates a client error. No futher attempts to reach this URL will be made.'.format(
-                        url,
-                        s)
+                    subject = f'Up Service: URL {url} responding with a client error'
+                    message = f'URL {url} is responding with the status {s} which indicates a client error. ' + \
+                              'No futher attempts to reach this URL will be made.'
                     send_email(email, subject, message)
                 elif s >= 200 and s < 300:
-                    subject = 'Up Service: URL {} responding successfully!'.format(
-                        url)
-                    message = 'URL {} is responding with the status {} which indicates success! Try it again yourself now.'.format(
-                        url,
-                        s)
+                    subject = f'Up Service: URL {url} responding successfully!'
+                    message = f'URL {url} is responding with the status {s} which indicates success! ' + \
+                              'Try it again yourself now.'
                     send_email(email, subject, message)
                 else:
-                    log.error(
-                        'unexpected status [{}] received for url [{}]'.format(
-                            s,
-                            url))
-                    subject = 'Up Service: URL {} responding unexpectedly'.format(
-                        url)
-                    message = 'URL {} is responding in an unexpected way. No futher attempts to reach this URL will be made.'.format(
-                        url)
+                    log.error('Unexpected status [%(status)s] received for url [%(url)s]',
+                              {'status': s, 'url': url})
+                    subject = f'Up Service: URL {url} responding unexpectedly'
+                    message = f'URL {url} is responding in an unexpected way. ' + \
+                              'No futher attempts to reach this URL will be made.'
                     send_email(email, subject, message)
 
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
@@ -88,9 +81,9 @@ def construct_app(queue, smtp_host, smtp_port, **kwargs):
         if tries > 0:
             queue.addAction(time.time() + delay, try_url, email, url, tries - 1)
         else:
-            subject = 'Up Service: URL {} still down'.format(url)
-            message = 'URL {} still appears to be be down and all tries have been exhausted. No futher attempts to reach this URL will be made.'.format(
-                url)
+            subject = f'Up Service: URL {url} still down'
+            message = f'URL {url} still appears to be be down and all tries have been exhausted. ' + \
+                      'No futher attempts to reach this URL will be made.'
             send_email(email, subject, message)
 
     @app.get('/status')
@@ -103,11 +96,7 @@ def construct_app(queue, smtp_host, smtp_port, **kwargs):
         email = request.query.email
         if url and email:
             queue_url(email, url, tries)
-            return 'Trying url {} {} times with delay of {} between tries. Will notify {}.'.format(
-                url,
-                tries,
-                delay_str,
-                email)
+            return f'Trying url {tries} times with delay of {delay_str} between tries.'
         else:
             return 'Please specify both a url and an email address.'
 
