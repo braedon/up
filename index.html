@@ -60,6 +60,8 @@
         color: #555;
       }
       #result {
+        display: none;
+
         padding: 20px;
 
         font-size: 1.1em;
@@ -83,12 +85,13 @@
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
     <script>
       $('#upForm').submit(function (event) {
-          event.preventDefault();
-          var query = $( this ).serialize();
-          var posting = $.post( "?" + query );
-          posting.done(function( data ) {
-            $( "#result" ).empty().append( data );
-          });
+        event.preventDefault();
+        var query = $(this).serialize();
+        var posting = $.post('?' + query);
+        posting.done(function (data) {
+          $('#result').empty().append(data);
+          $('#result').show();
+        });
       });
     </script>
   </body>
