@@ -2,74 +2,92 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>up?</title>
     <link rel="stylesheet" type="text/css" href="https://necolas.github.io/normalize.css/8.0.1/normalize.css">
     <style type='text/css'>
-      html, body {
-        height: 100%;
+      html {
         width: 100%;
+        height: 100%;
       }
       body {
-        display: flex;
+        display: inline-flex;
         justify-content: center;
         align-items: center;
-
-        min-width: 300px;
-        min-height: 400px;
+        min-width: 100%;
+        min-height: 100%;
 
         background-color: #F9F9F9;
+
+        color: #444;
+        font-size: 1.1em;
       }
       #upForm {
-        display: flex;
+        display: inline-flex;
         flex-direction: column;
         align-items: center;
 
         box-sizing: border-box;
         width: 100%;
-        max-width: 400px;
-        padding: 5px;
+        min-width: 250px;
+        max-width: 350px;
+        padding: 40px 20px 40px 20px;
+      }
+      #upForm > * {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px;
       }
       h1, #blurb, #result {
         text-align: center;
       }
-      h1, #blurb {
-        box-sizing: border-box;
-        width: 300px;
-        padding: 20px;
-        margin: 0px;
-      }
       h1 {
+        margin: 0px;
+        margin-bottom: 10px;
+
         font-size: 4em;
-        color: #444;
+        font-weight: bold;
+        font-family: sans-serif;
       }
       #blurb, #result {
         color: #777;
       }
       #blurb {
-        padding-top: 0px;
-        font-size: 1.2em;
-      }
-      input, button, #result {
-        box-sizing: border-box;
-        width: 100%;
+        margin-bottom: 10px;
       }
       input, button {
-        padding: 5px;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        color: inherit;
 
-        font-size: 1.2em;
-        color: #555;
+        border-radius: 5px;
+      }
+      input {
+        margin-bottom: 2px;
+
+        background-color: white;
+        border: 1px solid #DDD;
+        box-shadow: inset 0px 1px 3px #DDD;
+      }
+      button {
+        background-color: #0078e7;
+        border: 1px solid #0078e7;
+
+        color: white;
+        font-weight: bold;
+        font-family: sans-serif;
+      }
+      button:hover {
+        background-color: white;
+
+        color: #0078e7;
+      }
+      button:hover {
+        cursor: pointer;
       }
       #result {
-        display: none;
-
-        padding: 20px;
-
-        font-size: 1.1em;
-      }
-      @media (min-width: 400px) {
-        input,button {
-          font-size: 1.5em;
-        }
+        min-height: 100px;
       }
     </style>
   </head>
@@ -90,7 +108,6 @@
         var posting = $.post('?' + query);
         posting.done(function (data) {
           $('#result').empty().append(data);
-          $('#result').show();
         });
       });
     </script>
