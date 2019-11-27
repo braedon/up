@@ -94,9 +94,9 @@
   <body>
     <form id="upForm">
       <h1>up?</h1>
-      <div id="blurb">Submit a site and we'll email you when it's up.</div>
-      <input type="url" name="url" placeholder="url"/>
-      <input type="email" name="email" placeholder="email"/>
+      <div id="blurb">Submit a site, and we'll email you when it's up.</div>
+      <input id="email" type="email" name="email" autocomplete="email" placeholder="email" required/>
+      <input id="url" type="url" name="url" autocomplete="url" placeholder="url" required/>
       <button>Submit</button>
       <div id="result"></div>
     </form>
