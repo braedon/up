@@ -104,11 +104,14 @@
     <script>
       $('#upForm').submit(function (event) {
         event.preventDefault();
-        var query = $(this).serialize();
-        var posting = $.post('?' + query);
-        posting.done(function (data) {
-          $('#result').empty().append(data);
-        });
+        var posting = $.post('', $(this).serialize())
+          .done(function (data) {
+            $('#result').empty().append(data['message']).css('color', '');
+            $('#url').val('');
+          })
+          .fail(function (xhr, textStatus, errorThrown) {
+            $('#result').empty().append(xhr.responseJSON['error']).css('color', 'red');
+          });
       });
     </script>
   </body>
