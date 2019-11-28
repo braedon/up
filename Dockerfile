@@ -12,7 +12,8 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY *.py /app/
-COPY *.html /app/
+COPY up/*.py /app/up/
+COPY resources/*.html /app/resources/
 COPY LICENSE /app/
 COPY README.md /app/
 
