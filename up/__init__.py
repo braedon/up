@@ -1,12 +1,16 @@
 import json
 import logging
 import requests
-import time
+import rfc3339
+import secrets
 import smtplib
+import time
 
 from bottle import Bottle, request, response, static_file, abort
 from datetime import timedelta
 from email.message import EmailMessage
+
+from .dao import Job
 
 
 log = logging.getLogger(__name__)
@@ -19,6 +23,10 @@ TD_PERIODS = [
     ('minute', 60),
     ('second', 1)
 ]
+
+
+def generate_id():
+    return secrets.token_urlsafe(8)
 
 
 def json_default_error_handler(http_error):
@@ -43,14 +51,48 @@ def td_format(td_object):
         return ', '.join(strings)
 
 
-def construct_app(queue,
-                  tries, delay_minutes, timeout_seconds,
-                  smtp_host, smtp_port,
-                  **kwargs):
+def construct_app(dao, tries, delay_minutes, timeout_seconds, **kwargs):
     app = Bottle()
     app.default_error_handler = json_default_error_handler
 
     delay = timedelta(minutes=delay_minutes)
+
+    @app.get('/status')
+    def status():
+        return 'OK'
+
+    @app.post('/')
+    def post():
+        url = request.forms.url
+        email = request.forms.email
+        if url and email:
+            now_dt = rfc3339.now()
+            job = Job(job_id=generate_id(),
+                      status='pending',
+                      run_dt=now_dt + delay,
+                      email=email,
+                      url=url,
+                      tries=tries,
+                      delay_s=delay.total_seconds())
+            dao.insert_job(job)
+            return {
+                'url': url,
+                'email': email,
+                'tries': tries,
+                'delay_s': delay.total_seconds(),
+                'message': f'Trying url "{url}" {tries} times, with a delay of {td_format(delay)} between tries.',
+            }
+        else:
+            abort(400, 'Please specify both a url and an email address.')
+
+    @app.get('/')
+    def get():
+        return static_file('index.html', root='resources')
+
+    return app
+
+
+def run_worker(dao, timeout_seconds, smtp_host, smtp_port, **kwargs):
 
     def send_email(email, subject, message):
         msg = EmailMessage()
@@ -62,65 +104,77 @@ def construct_app(queue,
         with smtplib.SMTP(host=smtp_host, port=smtp_port) as s:
             s.send_message(msg)
 
-    def queue_url(email, url, tries):
+    def maybe_requeue(job):
+        if job.tries > 1:
+            new_job = Job(job_id=generate_id(),
+                          status='pending',
+                          run_dt=job.run_dt + timedelta(seconds=job.delay_s),
+                          email=job.email,
+                          url=job.url,
+                          tries=job.tries - 1,
+                          delay_s=job.delay_s)
+            log.info('[%(job_id)s] Couldn\'t load url %(url)s. Retrying. New job: %(new_job_id)s',
+                     {'job_id': job.job_id, 'url': job.url,
+                      'new_job_id': new_job.job_id})
+            dao.finish_job(job.job_id, new_job=new_job)
 
-        def try_url(email, url, tries):
-            try:
-                r = requests.get(url, timeout=timeout_seconds)
-                s = r.status_code
-                if s >= 500 and s < 600:
-                    queue_url(email, url, tries)
-                elif s >= 400 and s < 500:
-                    subject = f'Up Service: URL {url} responding with a client error'
-                    message = f'URL {url} is responding with the status {s} which indicates a client error. ' + \
-                              'No futher attempts to reach this URL will be made.'
-                    send_email(email, subject, message)
-                elif s >= 200 and s < 300:
-                    subject = f'Up Service: URL {url} responding successfully!'
-                    message = f'URL {url} is responding with the status {s} which indicates success! ' + \
-                              'Try it again yourself now.'
-                    send_email(email, subject, message)
-                else:
-                    log.error('Unexpected status [%(status)s] received for url [%(url)s]',
-                              {'status': s, 'url': url})
-                    subject = f'Up Service: URL {url} responding unexpectedly'
-                    message = f'URL {url} is responding in an unexpected way. ' + \
-                              'No futher attempts to reach this URL will be made.'
-                    send_email(email, subject, message)
-
-            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
-                queue_url(email, url, tries)
-
-        if tries > 0:
-            queue.addAction(time.time() + delay.total_seconds(), try_url, email, url, tries - 1)
         else:
-            subject = f'Up Service: URL {url} still down'
-            message = f'URL {url} still appears to be be down and all tries have been exhausted. ' + \
+            log.info('[%(job_id)s] Couldn\'t load url %(url)s and out of tries. Notifying user.',
+                     {'job_id': job.job_id, 'url': job.url})
+            subject = f'Up Service: URL {job.url} still down'
+            message = f'URL {job.url} still appears to be be down and all tries have been exhausted. ' + \
                       'No futher attempts to reach this URL will be made.'
-            send_email(email, subject, message)
+            send_email(job.email, subject, message)
+            dao.finish_job(job.job_id)
 
-    @app.get('/status')
-    def status():
-        return 'OK'
+    def try_url(job):
+        log.info('[%(job_id)s] Trying url %(url)s.',
+                 {'job_id': job.job_id, 'url': job.url})
 
-    @app.post('/')
-    def post():
-        url = request.forms.url
-        email = request.forms.email
-        if url and email:
-            queue_url(email, url, tries)
-            return {
-                'url': url,
-                'email': email,
-                'tries': tries,
-                'delay_seconds': delay.total_seconds(),
-                'message': f'Trying url "{url}" {tries} times, with a delay of {td_format(delay)} between tries.',
-            }
+        try:
+            r = requests.get(job.url, timeout=timeout_seconds)
+            s = r.status_code
+
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            maybe_requeue(job)
+            return
+
+        if s >= 500 and s < 600:
+            maybe_requeue(job)
+            return
+
+        if s >= 400 and s < 500:
+            log.info('[%(job_id)s] Client error %(status)s received for url %(url)s. Notifying user.',
+                     {'job_id': job.job_id, 'status': s, 'url': job.url})
+            subject = f'Up Service: URL {job.url} responding with a client error'
+            message = f'URL {job.url} is responding with the status {s} which indicates a client error. ' + \
+                      'No futher attempts to reach this URL will be made.'
+        elif s >= 200 and s < 300:
+            log.info('[%(job_id)s] Successful status %(status)s received for url %(url)s. Notifying user.',
+                     {'job_id': job.job_id, 'status': s, 'url': job.url})
+            subject = f'Up Service: URL {job.url} responding successfully!'
+            message = f'URL {job.url} is responding with the status {s} which indicates success! ' + \
+                      'Try it again yourself now.'
         else:
-            abort(400, 'Please specify both a url and an email address.')
+            log.error('[%(job_id)s] Unexpected status %(status)s received for url %(url)s. Notifying user.',
+                      {'job_id': job.job_id, 'status': s, 'url': job.url})
+            subject = f'Up Service: URL {job.url} responding unexpectedly'
+            message = f'URL {job.url} is responding in an unexpected way. ' + \
+                      'No futher attempts to reach this URL will be made.'
 
-    @app.get('/')
-    def get():
-        return static_file('index.html', root='resources')
+        send_email(job.email, subject, message)
+        dao.finish_job(job.job_id)
 
-    return app
+    while True:
+        next_job = dao.find_next_job()
+
+        if next_job:
+            wait_s = (next_job.run_dt - rfc3339.now()).total_seconds()
+
+            if wait_s > 0:
+                time.sleep(min(wait_s, 30))
+            else:
+                try_url(next_job)
+
+        else:
+            time.sleep(10)

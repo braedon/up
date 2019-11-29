@@ -2,11 +2,13 @@
 import bottle
 import click
 import logging
+import pymysql
 import time
 
-from up import construct_app
-from up.timeQueue import TimeQueue
-from up.workQueue import WorkQueue
+from DBUtils.PooledDB import PooledDB
+
+from up import construct_app, run_worker
+from up.dao import UpDao
 
 from logging_utils import configure_logging, wsgi_log_middleware
 from utils import log_exceptions, nice_shutdown, graceful_cleanup
@@ -19,26 +21,37 @@ CONTEXT_SETTINGS = {
 }
 
 
-@log_exceptions(exit_on_exception=True)
-@nice_shutdown()
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=CONTEXT_SETTINGS)
+def main():
+    pass
+
+
+@click.command()
 @click.option('--tries', default=10,
               help='Number of times to try a URL (default=10).')
 @click.option('--delay-minutes', default=30,
               help='How long to wait between tries of a URL (default=30).')
 @click.option('--timeout-seconds', default=10,
               help='Timeout when trying a URL (default=10).')
-@click.option('--smtp-host', default='localhost',
-              help='SMTP server host (default=localhost).')
-@click.option('--smtp-port', default=25,
-              help='SMTP server port (default=25).')
+@click.option('--mysql-host', default='localhost',
+              help='MySQL server host (default=localhost).')
+@click.option('--mysql-port', default=3306,
+              help='MySQL server port (default=3306).')
+@click.option('--mysql-user', default='up',
+              help='MySQL server user (default=up).')
+@click.option('--mysql-password', default='',
+              help='MySQL server password (default=None).')
+@click.option('--mysql-database', default='up',
+              help='MySQL server database (default=up).')
 @click.option('--port', '-p', default=8080,
               help='Port to serve on (default=8080).')
 @click.option('--json', '-j', default=False, is_flag=True,
               help='Log in json.')
 @click.option('--verbose', '-v', default=False, is_flag=True,
               help='Log debug messages.')
-def main(**options):
+@log_exceptions(exit_on_exception=True)
+@nice_shutdown()
+def server(**options):
 
     def graceful_shutdown():
         log.info('Starting graceful shutdown.')
@@ -48,21 +61,82 @@ def main(**options):
 
     configure_logging(json=options['json'], verbose=options['verbose'])
 
-    workQueue = WorkQueue()
-    queue = TimeQueue(workQueue)
-    queue.daemon = True
-    queue.setName('queue')
+    connection_pool = PooledDB(creator=pymysql,
+                               mincached=1,
+                               maxcached=10,  # TODO: make configurable?
+                               # max connections currently in use - doesn't
+                               # include cached connections
+                               maxconnections=50,  # TODO: make configurable?
+                               blocking=True,
+                               host=options['mysql_host'],
+                               port=options['mysql_port'],
+                               user=options['mysql_user'],
+                               password=options['mysql_password'],
+                               database=options['mysql_database'],
+                               charset='utf8mb4',
+                               cursorclass=pymysql.cursors.DictCursor)
+    up_dao = UpDao(connection_pool)
+    up_dao.create_job_table()
 
-    app = construct_app(queue, **options)
+    app = construct_app(up_dao, **options)
     app = wsgi_log_middleware(app)
-
-    queue.start()
 
     with graceful_cleanup(graceful_shutdown):
         bottle.run(app,
                    host='0.0.0.0', port=options['port'],
                    # Disable default request logging - we're using middleware
                    quiet=True, error_log=None)
+
+
+@click.command()
+@click.option('--timeout-seconds', default=10,
+              help='Timeout when trying a URL (default=10).')
+@click.option('--mysql-host', default='localhost',
+              help='MySQL server host (default=localhost).')
+@click.option('--mysql-port', default=3306,
+              help='MySQL server port (default=3306).')
+@click.option('--mysql-user', default='up',
+              help='MySQL server user (default=up).')
+@click.option('--mysql-password', default='',
+              help='MySQL server password (default=None).')
+@click.option('--mysql-database', default='up',
+              help='MySQL server database (default=up).')
+@click.option('--smtp-host', default='localhost',
+              help='SMTP server host (default=localhost).')
+@click.option('--smtp-port', default=25,
+              help='SMTP server port (default=25).')
+@click.option('--json', '-j', default=False, is_flag=True,
+              help='Log in json.')
+@click.option('--verbose', '-v', default=False, is_flag=True,
+              help='Log debug messages.')
+@log_exceptions(exit_on_exception=True)
+@nice_shutdown()
+def worker(**options):
+
+    configure_logging(json=options['json'], verbose=options['verbose'])
+
+    connection_pool = PooledDB(creator=pymysql,
+                               mincached=1,
+                               maxcached=10,  # TODO: make configurable?
+                               # max connections currently in use - doesn't
+                               # include cached connections
+                               maxconnections=50,  # TODO: make configurable?
+                               blocking=True,
+                               host=options['mysql_host'],
+                               port=options['mysql_port'],
+                               user=options['mysql_user'],
+                               password=options['mysql_password'],
+                               database=options['mysql_database'],
+                               charset='utf8mb4',
+                               cursorclass=pymysql.cursors.DictCursor)
+    up_dao = UpDao(connection_pool)
+    up_dao.create_job_table()
+
+    run_worker(up_dao, **options)
+
+
+main.add_command(server)
+main.add_command(worker)
 
 
 if __name__ == '__main__':
