@@ -81,3 +81,4 @@ def configure_logging(json=False, verbose=False):
         level=logging.DEBUG if verbose else logging.INFO,
         handlers=[log_handler]
     )
+    logging.captureWarnings(True)
