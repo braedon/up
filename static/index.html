@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="https://necolas.github.io/normalize.css/8.0.1/normalize.css">
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <title>up?</title>
+  </head>
+  <body>
+    <div id="content">
+      <h1>up?</h1>
+      <div class="message">
+        Got a link that's down?<br />
+        We'll notify you when it's up.
+      </div>
+      <form action="/check" method="GET">
+        <input type="url" name="url" autocomplete="url" placeholder="url" required/>
+        <button>Check</button>
+      </form>
+    </div>
+  </body>
+</html>

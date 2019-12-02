@@ -6,7 +6,7 @@ import secrets
 import smtplib
 import time
 
-from bottle import Bottle, request, response, static_file, abort
+from bottle import Bottle, request, response, static_file, abort, template
 from datetime import timedelta
 from email.message import EmailMessage
 
@@ -61,33 +61,56 @@ def construct_app(dao, tries, delay_minutes, timeout_seconds, **kwargs):
     def status():
         return 'OK'
 
-    @app.post('/')
-    def post():
+    @app.get('/')
+    def index():
+        return static_file('index.html', root='static')
+
+    @app.get('/main.css')
+    def css():
+        return static_file('main.css', root='static')
+
+    @app.get('/check')
+    def check():
+        url = request.query.url
+        if not url:
+            abort(400, 'Please specify a url.')
+
+        try:
+            r = requests.get(url, timeout=timeout_seconds)
+            s = r.status_code
+
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            return template('check_down', url=url)
+
+        if s >= 500 and s < 600:
+            return template('check_down', url=url)
+
+        if s >= 400 and s < 500:
+            return template('check_client_error', url=url)
+        elif s >= 200 and s < 300:
+            return template('check_up', url=url)
+        else:
+            log.error('[Check] Unexpected status %(status)s received for url %(url)s.',
+                      {'status': s, 'url': url})
+            abort(500)
+
+    @app.post('/submit')
+    def submit():
         url = request.forms.url
         email = request.forms.email
-        if url and email:
-            now_dt = rfc3339.now()
-            job = Job(job_id=generate_id(),
-                      status='pending',
-                      run_dt=now_dt + delay,
-                      email=email,
-                      url=url,
-                      tries=tries,
-                      delay_s=delay.total_seconds())
-            dao.insert_job(job)
-            return {
-                'url': url,
-                'email': email,
-                'tries': tries,
-                'delay_s': delay.total_seconds(),
-                'message': f'Trying url "{url}" {tries} times, with a delay of {td_format(delay)} between tries.',
-            }
-        else:
+        if not (url and email):
             abort(400, 'Please specify both a url and an email address.')
 
-    @app.get('/')
-    def get():
-        return static_file('index.html', root='resources')
+        now_dt = rfc3339.now()
+        job = Job(job_id=generate_id(),
+                  status='pending',
+                  run_dt=now_dt + delay,
+                  email=email,
+                  url=url,
+                  tries=tries,
+                  delay_s=delay.total_seconds())
+        dao.insert_job(job)
+        return template('submit_result', url=url, email=email)
 
     return app
 

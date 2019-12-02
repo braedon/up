@@ -13,7 +13,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY *.py /app/
 COPY up/*.py /app/up/
-COPY resources/*.html /app/resources/
+COPY static/*.html /app/static/
+COPY static/*.css /app/static/
+COPY views/*.tpl /app/views/
 COPY LICENSE /app/
 COPY README.md /app/
 
