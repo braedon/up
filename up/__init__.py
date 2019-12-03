@@ -51,11 +51,11 @@ def td_format(td_object):
         return ', '.join(strings)
 
 
-def construct_app(dao, tries, delay_minutes, timeout_seconds, **kwargs):
+def construct_app(dao, tries, initial_delay_minutes, timeout_seconds, **kwargs):
     app = Bottle()
     app.default_error_handler = json_default_error_handler
 
-    delay = timedelta(minutes=delay_minutes)
+    initial_delay = timedelta(minutes=initial_delay_minutes)
 
     @app.get('/status')
     def status():
@@ -104,18 +104,19 @@ def construct_app(dao, tries, delay_minutes, timeout_seconds, **kwargs):
         now_dt = rfc3339.now()
         job = Job(job_id=generate_id(),
                   status='pending',
-                  run_dt=now_dt + delay,
+                  run_dt=now_dt + initial_delay,
                   email=email,
                   url=url,
                   tries=tries,
-                  delay_s=delay.total_seconds())
+                  delay_s=initial_delay.total_seconds())
         dao.insert_job(job)
         return template('submit_result', url=url, email=email)
 
     return app
 
 
-def run_worker(dao, timeout_seconds, smtp_host, smtp_port, **kwargs):
+def run_worker(dao, delay_multiplier, timeout_seconds,
+               smtp_host, smtp_port, **kwargs):
 
     def send_email(email, subject, message):
         msg = EmailMessage()
@@ -129,13 +130,14 @@ def run_worker(dao, timeout_seconds, smtp_host, smtp_port, **kwargs):
 
     def maybe_requeue(job):
         if job.tries > 1:
+            delay = timedelta(seconds=job.delay_s) * delay_multiplier
             new_job = Job(job_id=generate_id(),
                           status='pending',
-                          run_dt=job.run_dt + timedelta(seconds=job.delay_s),
+                          run_dt=job.run_dt + delay,
                           email=job.email,
                           url=job.url,
                           tries=job.tries - 1,
-                          delay_s=job.delay_s)
+                          delay_s=delay.total_seconds())
             log.info('[%(job_id)s] Couldn\'t load url %(url)s. Retrying. New job: %(new_job_id)s',
                      {'job_id': job.job_id, 'url': job.url,
                       'new_job_id': new_job.job_id})

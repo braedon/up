@@ -7,10 +7,11 @@ import logging
 import pymysql
 import time
 
+from datetime import timedelta
 from DBUtils.PooledDB import PooledDB
 from gevent.pool import Pool
 
-from up import construct_app, run_worker
+from up import construct_app, run_worker, td_format
 from up.dao import UpDao
 
 from logging_utils import configure_logging, wsgi_log_middleware
@@ -33,10 +34,10 @@ def main():
 
 
 @click.command()
-@click.option('--tries', default=10,
-              help='Number of times to try a URL (default=10).')
-@click.option('--delay-minutes', default=30,
-              help='How long to wait between tries of a URL (default=30).')
+@click.option('--tries', default=9,
+              help='Number of times to try a URL (default=9).')
+@click.option('--initial-delay-minutes', default=15,
+              help='How long to wait before the first try of a URL (default=15).')
 @click.option('--timeout-seconds', default=10,
               help='Timeout when trying a URL (default=10).')
 @click.option('--mysql-host', default='localhost',
@@ -99,6 +100,8 @@ def server(**options):
 
 
 @click.command()
+@click.option('--delay-multiplier', default=2,
+              help='Multiplier to apply to the delay after each try of a URL (default=2).')
 @click.option('--timeout-seconds', default=10,
               help='Timeout when trying a URL (default=10).')
 @click.option('--mysql-host', default='localhost',
@@ -145,8 +148,28 @@ def worker(**options):
     run_worker(up_dao, **options)
 
 
+@click.command()
+@click.option('--tries', default=9,
+              help='Number of times to try a URL (default=9).')
+@click.option('--initial-delay-minutes', default=15,
+              help='How long to wait before the first try of a URL (default=15).')
+@click.option('--delay-multiplier', default=2,
+              help='Multiplier to apply to the delay after each try of a URL (default=2).')
+def show_schedule(tries, initial_delay_minutes, delay_multiplier):
+
+    delay = timedelta(minutes=initial_delay_minutes)
+    total_delay = delay
+    for t in range(1, tries + 1):
+        print(f'{t:5}: {td_format(delay)}')
+        delay = delay * delay_multiplier
+        total_delay += delay
+
+    print(f"Total: {td_format(delay)}")
+
+
 main.add_command(server)
 main.add_command(worker)
+main.add_command(show_schedule)
 
 
 if __name__ == '__main__':
