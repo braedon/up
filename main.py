@@ -100,6 +100,8 @@ def server(**options):
 
 
 @click.command()
+@click.option('--from-address', required=True,
+              help='Email address to send notifications from.')
 @click.option('--delay-multiplier', default=2,
               help='Multiplier to apply to the delay after each try of a URL (default=2).')
 @click.option('--timeout-seconds', default=10,

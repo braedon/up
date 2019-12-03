@@ -115,13 +115,13 @@ def construct_app(dao, tries, initial_delay_minutes, timeout_seconds, **kwargs):
     return app
 
 
-def run_worker(dao, delay_multiplier, timeout_seconds,
+def run_worker(dao, from_address, delay_multiplier, timeout_seconds,
                smtp_host, smtp_port, **kwargs):
 
     def send_email(email, subject, message):
         msg = EmailMessage()
         msg['Subject'] = subject
-        msg['From'] = 'up@resisty.com'
+        msg['From'] = from_address
         msg['To'] = email
         msg.set_content(message)
 
