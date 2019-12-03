@@ -1,4 +1,3 @@
-up
-==
+# up - [up.resisty.com](https://up.resisty.com)
 
-Is it up yet?
+A simple service to notify you when a link is back up.
