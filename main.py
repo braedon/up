@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+from gevent import monkey; monkey.patch_all()
+
 import bottle
 import click
 import logging
@@ -6,6 +8,7 @@ import pymysql
 import time
 
 from DBUtils.PooledDB import PooledDB
+from gevent.pool import Pool
 
 from up import construct_app, run_worker
 from up.dao import UpDao
@@ -13,12 +16,15 @@ from up.dao import UpDao
 from logging_utils import configure_logging, wsgi_log_middleware
 from utils import log_exceptions, nice_shutdown, graceful_cleanup
 
-
-log = logging.getLogger(__name__)
-
 CONTEXT_SETTINGS = {
     'help_option_names': ['-h', '--help']
 }
+
+log = logging.getLogger(__name__)
+
+# Use an unbounded pool to track gevent greenlets so we can
+# wait for them to finish on shutdown.
+gevent_pool = Pool()
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -58,6 +64,9 @@ def server(**options):
         # Sleep for a few seconds to allow for race conditions between sending
         # the SIGTERM and load balancers stopping sending traffic here and
         time.sleep(5)
+        # Allow any running requests to complete before exiting.
+        # Socket is still open, so assumes no new traffic is reaching us.
+        gevent_pool.join()
 
     configure_logging(json=options['json'], verbose=options['verbose'])
 
@@ -84,6 +93,7 @@ def server(**options):
     with graceful_cleanup(graceful_shutdown):
         bottle.run(app,
                    host='0.0.0.0', port=options['port'],
+                   server='gevent', spawn=gevent_pool,
                    # Disable default request logging - we're using middleware
                    quiet=True, error_log=None)
 
