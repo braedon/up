@@ -72,10 +72,10 @@ def server(**options):
 
     connection_pool = PooledDB(creator=pymysql,
                                mincached=1,
-                               maxcached=10,  # TODO: make configurable?
+                               maxcached=10,
                                # max connections currently in use - doesn't
                                # include cached connections
-                               maxconnections=50,  # TODO: make configurable?
+                               maxconnections=50,
                                blocking=True,
                                host=options['mysql_host'],
                                port=options['mysql_port'],
@@ -127,10 +127,10 @@ def worker(**options):
 
     connection_pool = PooledDB(creator=pymysql,
                                mincached=1,
-                               maxcached=10,  # TODO: make configurable?
+                               maxcached=1,
                                # max connections currently in use - doesn't
                                # include cached connections
-                               maxconnections=50,  # TODO: make configurable?
+                               maxconnections=1,
                                blocking=True,
                                host=options['mysql_host'],
                                port=options['mysql_port'],
