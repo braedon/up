@@ -54,11 +54,25 @@ def construct_app(dao, tries, initial_delay_minutes, timeout_seconds, **kwargs):
 
     @app.get('/')
     def index():
-        return static_file('index.html', root='static')
+        return template('index')
 
     @app.get('/main.css')
     def css():
         return static_file('main.css', root='static')
+
+    # Favicon stuff generated at:
+    # https://favicon.io/favicon-generator/?t=u%3F&ff=Roboto+Slab&fs=100&fc=%23444&b=rounded&bc=%23F9F9F9
+    @app.get('/favicon.ico')
+    def icon():
+        return static_file('favicon.ico', root='static')
+
+    @app.get('/site.webmanifest')
+    def manifest():
+        return static_file('site.webmanifest', root='static')
+
+    @app.get('/<filename>.png')
+    def root_pngs(filename):
+        return static_file(f'{filename}.png', root='static')
 
     @app.get('/check')
     def check():
