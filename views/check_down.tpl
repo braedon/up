@@ -11,7 +11,7 @@
     <div id="content">
       <h1>down!</h1>
       <div class="message">
-        That <a href="{{url}}" target="_blank">link</a> does seem to be down.
+        That <a href="{{url}}" target="_blank" rel="noopener noreferrer">link</a> does seem to be down.
       </div>
       <div class="message">
         Submit an email address to get notified when it's up again.
@@ -22,7 +22,7 @@
         <button>Submit</button>
       </form>
       <div class="message">
-        <a href="/" >Got another link?</a>
+        <a href="/">Got another link?</a>
       </div>
     </div>
   </body>

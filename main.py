@@ -14,8 +14,8 @@ from gevent.pool import Pool
 from up import construct_app, run_worker, td_format
 from up.dao import UpDao
 
-from logging_utils import configure_logging, wsgi_log_middleware
 from utils import log_exceptions, nice_shutdown, graceful_cleanup
+from utils.logging import configure_logging, wsgi_log_middleware
 
 CONTEXT_SETTINGS = {
     'help_option_names': ['-h', '--help']

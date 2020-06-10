@@ -1,16 +1,15 @@
-import json
 import logging
 import requests
 import rfc3339
-import secrets
 import smtplib
 import time
 
-from bottle import Bottle, request, response, static_file, abort, template
+from bottle import Bottle, request, static_file, template
 from datetime import timedelta
 from email.message import EmailMessage
 
 from .dao import Job
+from .misc import abort, html_default_error_hander, generate_id, security_headers
 
 
 log = logging.getLogger(__name__)
@@ -23,15 +22,6 @@ TD_PERIODS = [
     ('minute', 60),
     ('second', 1)
 ]
-
-
-def generate_id():
-    return secrets.token_urlsafe(8)
-
-
-def json_default_error_handler(http_error):
-    response.content_type = 'application/json'
-    return json.dumps({'error': http_error.body}, separators=(',', ':'))
 
 
 def td_format(td_object):
@@ -53,7 +43,8 @@ def td_format(td_object):
 
 def construct_app(dao, tries, initial_delay_minutes, timeout_seconds, **kwargs):
     app = Bottle()
-    app.default_error_handler = json_default_error_handler
+    app.default_error_handler = html_default_error_hander
+    app.install(security_headers)
 
     initial_delay = timedelta(minutes=initial_delay_minutes)
 

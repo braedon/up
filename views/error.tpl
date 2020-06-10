@@ -9,16 +9,16 @@
   </head>
   <body>
     <div id="content">
-      <h1>up!</h1>
+      <h1>up?</h1>
       <div class="message">
-        That <a href="{{url}}" target="_blank" rel="noopener noreferrer">link</a> seems to be up.<br />
-        Try it again now.
+        % if error.body and error.status_code < 500:
+        {{error.body}}
+        % else:
+        Oops, something went wrong
+        % end
       </div>
       <div class="message">
-        If it's still down, the issue might be specific to you.
-      </div>
-      <div class="message">
-        <a href="/">Got another link?</a>
+        <a href="/">Got a link?</a>
       </div>
     </div>
   </body>
