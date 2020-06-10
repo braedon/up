@@ -32,6 +32,23 @@ def job_from_db_format(db_format_job):
     return Job(**db_format_job)
 
 
+def create_db(conn, db_name):
+    sql = (
+        f'CREATE DATABASE IF NOT EXISTS `{db_name}` '
+        'CHARACTER SET `utf8mb4`'
+        ';'
+    )
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
 class UpDao(object):
 
     def __init__(self, connection_pool):

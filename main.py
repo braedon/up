@@ -10,9 +10,10 @@ import time
 from datetime import timedelta
 from DBUtils.PooledDB import PooledDB
 from gevent.pool import Pool
+from pymysql import Connection
 
 from up import construct_app, run_worker, td_format
-from up.dao import UpDao
+from up.dao import UpDao, create_db
 
 from utils import log_exceptions, nice_shutdown, graceful_cleanup
 from utils.logging import configure_logging, wsgi_log_middleware
@@ -31,6 +32,55 @@ gevent_pool = Pool()
 @click.group(context_settings=CONTEXT_SETTINGS)
 def main():
     pass
+
+
+@click.command()
+@click.option('--mysql-host', default='localhost',
+              help='MySQL server host (default=localhost).')
+@click.option('--mysql-port', default=3306,
+              help='MySQL server port (default=3306).')
+@click.option('--mysql-user', default='up',
+              help='MySQL server user (default=up).')
+@click.option('--mysql-password', default='',
+              help='MySQL server password (default=None).')
+@click.option('--mysql-database', default='up',
+              help='MySQL server database (default=up).')
+@click.option('--json', '-j', default=False, is_flag=True,
+              help='Log in json.')
+@click.option('--verbose', '-v', default=False, is_flag=True,
+              help='Log debug messages.')
+@log_exceptions(exit_on_exception=True)
+@nice_shutdown()
+def init(**options):
+
+    configure_logging(json=options['json'], verbose=options['verbose'])
+
+    connection = Connection(host=options['mysql_host'],
+                            port=options['mysql_port'],
+                            user=options['mysql_user'],
+                            password=options['mysql_password'],
+                            charset='utf8mb4',
+                            cursorclass=pymysql.cursors.DictCursor)
+
+    create_db(connection, options['mysql_database'])
+
+    connection_pool = PooledDB(creator=pymysql,
+                               mincached=1,
+                               maxcached=10,
+                               # max connections currently in use - doesn't
+                               # include cached connections
+                               maxconnections=50,
+                               blocking=True,
+                               host=options['mysql_host'],
+                               port=options['mysql_port'],
+                               user=options['mysql_user'],
+                               password=options['mysql_password'],
+                               database=options['mysql_database'],
+                               charset='utf8mb4',
+                               cursorclass=pymysql.cursors.DictCursor)
+    up_dao = UpDao(connection_pool)
+
+    up_dao.create_job_table()
 
 
 @click.command()
@@ -86,7 +136,6 @@ def server(**options):
                                charset='utf8mb4',
                                cursorclass=pymysql.cursors.DictCursor)
     up_dao = UpDao(connection_pool)
-    up_dao.create_job_table()
 
     app = construct_app(up_dao, **options)
     app = wsgi_log_middleware(app)
@@ -145,7 +194,6 @@ def worker(**options):
                                charset='utf8mb4',
                                cursorclass=pymysql.cursors.DictCursor)
     up_dao = UpDao(connection_pool)
-    up_dao.create_job_table()
 
     run_worker(up_dao, **options)
 
@@ -169,6 +217,7 @@ def show_schedule(tries, initial_delay_minutes, delay_multiplier):
     print(f"Total: {td_format(delay)}")
 
 
+main.add_command(init)
 main.add_command(server)
 main.add_command(worker)
 main.add_command(show_schedule)
