@@ -1,14 +1,18 @@
 % rebase('base.tpl', title='up? - Page Not Found')
-<div id="content">
-  <h1>up?</h1>
-  <div class="message">
-    % if error.body and not error.body.startswith('Not found: '):
-    {{error.body}}
-    % else:
-    Oops, that page doesn't exist
-    % end
+<main>
+  <span class="spacer"></span>
+  <div class="content">
+    <h1>up?</h1>
+    <div class="section">
+      % if error.body and not error.body.startswith('Not found: '):
+      <p>{{error.body}}</p>
+      % else:
+      <p>Oops, that page doesn't exist</p>
+      % end
+    </div>
   </div>
-  <div class="message">
+  <span class="spacer"></span>
+  <div class="linkRow">
     <a href="/">Got a link?</a>
   </div>
-</div>
+</main>

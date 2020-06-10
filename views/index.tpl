@@ -1,12 +1,18 @@
 % rebase('base.tpl', title='up?', description='Get notified when a link is back up.')
-<div id="content">
-  <h1>up?</h1>
-  <div class="message">
-    Got a link that's down?<br />
-    We'll notify you when it's up.
-  </div>
-  <form action="/check" method="GET">
-    <input type="url" name="url" autocomplete="url" placeholder="url" required/>
-    <button>Check</button>
+<main>
+  <span class="spacer"></span>
+  <form class="content limitWidth" action="/check" method="GET">
+    <h1>up?</h1>
+    <div class="section">
+      <p>
+        Got a link that's down?<br>
+        Get notified when it's up.
+      </p>
+    </div>
+    <div class="section">
+      <input type="url" name="url" autocomplete="url" placeholder="Link URL" required>
+      <button class="mainButton">Check Link</button>
+    </div>
   </form>
-</div>
+  <span class="spacer"></span>
+</main>

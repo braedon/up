@@ -1,14 +1,21 @@
 % rebase('base.tpl', title='up? - Link Up')
-<div id="content">
-  <h1>up!</h1>
-  <div class="message">
-    That <a href="{{url}}" target="_blank" rel="noopener noreferrer">link</a> seems to be up.<br />
-    Try it again now.
+<main>
+  <span class="spacer"></span>
+  <div class="content">
+    <h1>up!</h1>
+    <div class="section">
+      <p>
+        That <a href="{{url}}" target="_blank" rel="noopener noreferrer">link</a>
+        seems to be up.<br>
+        Try it again now.
+      </p>
+      <p>
+        If it's still down, the issue might be specific to you.
+      </p>
+    </div>
   </div>
-  <div class="message">
-    If it's still down, the issue might be specific to you.
-  </div>
-  <div class="message">
+  <span class="spacer"></span>
+  <div class="linkRow">
     <a href="/">Got another link?</a>
   </div>
-</div>
+</main>

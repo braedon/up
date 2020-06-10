@@ -1,14 +1,18 @@
 % rebase('base.tpl', title='up? - Error')
-<div id="content">
-  <h1>up?</h1>
-  <div class="message">
-    % if error.body and error.status_code < 500:
-    {{error.body}}
-    % else:
-    Oops, something went wrong
-    % end
+<main>
+  <span class="spacer"></span>
+  <div class="content">
+    <h1>up?</h1>
+    <div class="section">
+      % if error.body and error.status_code < 500:
+      <p>{{error.body}}</p>
+      % else:
+      <p>Oops, something went wrong</p>
+      % end
+    </div>
   </div>
-  <div class="message">
+  <span class="spacer"></span>
+  <div class="linkRow">
     <a href="/">Got a link?</a>
   </div>
-</div>
+</main>
