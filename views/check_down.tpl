@@ -19,7 +19,7 @@
         That <a href="{{url}}" target="_blank" rel="noopener noreferrer">link</a>
         does seem to be down.
       </p>
-      <p>Should we notify you via Alias when it's back up?</p>
+      <p>Should we notify you via {{oidc_name}} when it's back up?</p>
     </div>
     <%
     from urllib.parse import urlencode
@@ -30,7 +30,7 @@
     %>
     <form class="section" action="/link?{{qs}}" method="POST">
       <input type="hidden" name="csrf" value="{{csrf}}">
-      <button class="mainButton">Notify Me via Alias</button>
+      <button class="mainButton">Notify Me via {{oidc_name}}</button>
     </form>
   </div>
   <span class="spacer"></span>
