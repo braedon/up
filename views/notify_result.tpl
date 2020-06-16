@@ -1,12 +1,16 @@
 % rebase('base.tpl', title='up? - Link Submitted')
 <main>
+  <div class="header">
+    <span class="spacer"></span>
+    <a class="buttonLike" href="/logout">Log out</a>
+  </div>
   <span class="spacer"></span>
   <div class="content">
     <h1>up?</h1>
     <div class="section">
       <p>
-        We'll notify <a href="mailto:{{email}}" target="_blank" rel="noopener noreferrer">you</a>
-        when the <a href="{{url}}" target="_blank" rel="noopener noreferrer">link</a> is up.
+        We'll send you a message on {{oidc_name}} when the
+        <a href="{{url}}" target="_blank" rel="noopener noreferrer">link</a> is up.
       </p>
     </div>
   </div>

@@ -60,3 +60,6 @@ target/
 
 # Gedit
 *~
+
+id_rsa*
+README_DEV.md

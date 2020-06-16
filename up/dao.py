@@ -3,9 +3,9 @@ from datetime import timezone
 
 
 Job = namedtuple('Job', ['job_id',
+                         'user_id',
                          'status',
                          'run_dt',
-                         'email',
                          'url',
                          'tries',
                          'delay_s'])
@@ -61,9 +61,9 @@ class UpDao(object):
                 sql = (
                     'CREATE TABLE IF NOT EXISTS `job` ('
                     '   `job_id` VARCHAR(100) BINARY NOT NULL,'
+                    '   `user_id` VARCHAR(191) BINARY NOT NULL,'
                     '   `status` ENUM(\'pending\', \'done\') NOT NULL,'
                     '   `run_dt` DATETIME NOT NULL,'
-                    '   `email` VARCHAR(191) BINARY NOT NULL,'
                     '   `url` VARCHAR(2000) NOT NULL,'
                     '   `tries` TINYINT UNSIGNED NOT NULL,'
                     '   `delay_s` MEDIUMINT UNSIGNED NOT NULL,'

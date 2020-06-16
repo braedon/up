@@ -1,5 +1,9 @@
 % rebase('base.tpl', title='up? - Client Error')
 <main>
+  <div class="header">
+    <span class="spacer"></span>
+    <a class="buttonLike" href="/logout">Log out</a>
+  </div>
   <span class="spacer"></span>
   <div class="content">
     <h1>???</h1>

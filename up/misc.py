@@ -1,11 +1,14 @@
+import hashlib
 import functools
 import secrets
 import textwrap
 
+from base64 import urlsafe_b64encode
 from bottle import HTTPResponse, response, template
 from bottle import abort as bottle_abort
 
 ID_BYTES = 16
+HASH_BYTES = 16
 
 
 # Have no text by default, unlike the default bottle abort function
@@ -13,9 +16,16 @@ def abort(code=500, text=None):
     bottle_abort(code=code, text=text)
 
 
-# TODO: Should we generate a GUID v4 (fully random) instead?
 def generate_id():
     return secrets.token_urlsafe(ID_BYTES)
+
+
+def hash_urlsafe(value):
+    if isinstance(value, str):
+        value = value.encode('utf-8')
+
+    hash_bytes = hashlib.blake2b(value, digest_size=HASH_BYTES).digest()
+    return urlsafe_b64encode(hash_bytes).decode('utf-8').replace('=', '')
 
 
 def indent(block, indent=2):
