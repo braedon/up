@@ -11,7 +11,7 @@ from urllib.parse import urlparse, urljoin, urlencode
 from utils.param_parse import parse_params, boolean_param, string_param
 
 from .dao import Job
-from .misc import abort, html_default_error_hander, generate_id, hash_urlsafe, security_headers
+from .misc import abort, html_default_error_hander, generate_id, hash_urlsafe, SecurityHeadersPlugin
 from .session import SessionHandler
 
 
@@ -51,7 +51,7 @@ def construct_app(dao, token_decoder,
                   tries, initial_delay_minutes, timeout_seconds,
                   service_protocol, service_hostname,
                   service_port, service_path,
-                  oidc_name, oidc_about_url,
+                  oidc_name, oidc_iss, oidc_about_url,
                   oidc_auth_endpoint, oidc_token_endpoint,
                   oidc_client_id, oidc_client_secret,
                   testing_mode,
@@ -61,7 +61,14 @@ def construct_app(dao, token_decoder,
 
     app = Bottle()
     app.default_error_handler = html_default_error_hander
-    app.install(security_headers)
+    # Need to allow submitting forms to the OIDC provider, as some browsers consider redirects after
+    # form submissions to be targets. We redirect to the OIDC provider when submitting the
+    # "notify me" form to request/ensure contact permissions are set.
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/form-action
+    extra_form_targets = [oidc_iss]
+    if testing_mode:
+        extra_form_targets.append('http://localhost:*')
+    app.install(SecurityHeadersPlugin(extra_form_targets=extra_form_targets))
 
     initial_delay = timedelta(minutes=initial_delay_minutes)
 
@@ -357,10 +364,10 @@ def construct_app(dao, token_decoder,
             s = r.status_code
 
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
-            return template('check_down', alert=alert, url=url, csrf=csrf)
+            return template('check_down', alert=alert, oidc_name=oidc_name, url=url, csrf=csrf)
 
         if s >= 500 and s < 600:
-            return template('check_down', alert=alert, url=url, csrf=csrf)
+            return template('check_down', alert=alert, oidc_name=oidc_name, url=url, csrf=csrf)
 
         if s >= 400 and s < 500:
             return template('check_client_error', url=url)

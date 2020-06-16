@@ -44,7 +44,10 @@ class SecurityHeadersPlugin(object):
     name = 'security_headers'
     api = 2
 
-    def __init__(self):
+    def __init__(self, extra_form_targets=None):
+        extra_form_targets = extra_form_targets or []
+        extra_form_targets_str = ' ' + ' '.join(extra_form_targets)
+
         self.headers = {
             'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
             'Expect-CT': 'max-age=86400, enforce',
@@ -59,7 +62,7 @@ class SecurityHeadersPlugin(object):
                 # Document directives
                 "base-uri 'self'",
                 # Navigation directives
-                "form-action 'self'",
+                f"form-action 'self' {extra_form_targets_str}",
                 "frame-ancestors 'none'",
                 # Other directives
                 "block-all-mixed-content",
