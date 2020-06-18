@@ -2,7 +2,7 @@
 <main>
   <div class="header">
     <span class="spacer"></span>
-    <a class="buttonLike" href="/logout">Log out</a>
+    <a class="buttonLike" href="/logout">Log Out</a>
   </div>
   <span class="spacer"></span>
   <div class="content limitWidth">

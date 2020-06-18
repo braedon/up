@@ -3,7 +3,7 @@
   % if defined('user_id') and user_id:
   <div class="header">
     <span class="spacer"></span>
-    <a class="buttonLike" href="/logout">Log out</a>
+    <a class="buttonLike" href="/logout">Log Out</a>
   </div>
   % end
   <span class="spacer"></span>
