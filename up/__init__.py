@@ -29,6 +29,8 @@ TD_PERIODS = [
     ('second', 1)
 ]
 
+NOTIFICATION_CHANNEL = 'link_notifications'
+
 
 def td_format(td_object):
     remaining_secs = int(td_object.total_seconds())
@@ -95,7 +97,7 @@ def construct_app(dao, token_decoder,
                             {'continue_url': continue_url})
                 abort(400)
 
-    def construct_oidc_request(*scopes):
+    def construct_oidc_request(*scopes, channels=None):
         state = generate_id()
         nonce = generate_id()
 
@@ -114,6 +116,8 @@ def construct_app(dao, token_decoder,
             # request will be rejected.
             'nonce': hash_urlsafe(nonce),
         }
+        if channels:
+            qs_dict['channels'] = ' '.join(channels)
         qs = urlencode(qs_dict)
         url = f'{oidc_auth_endpoint}?{qs}'
 
@@ -304,14 +308,18 @@ def construct_app(dao, token_decoder,
 
         elif action == 'notify':
             url = oidc_data['url']
-            approved_scopes = r_json['scope'].split()
 
+            approved_scopes = r_json['scope'].split()
             if not ('offline_access' in approved_scopes and 'contact' in approved_scopes):
                 qs_dict = {'url': url, 'alert': 'insufficient-scope'}
                 qs = urlencode(qs_dict)
                 redirect(f'/link?{qs}')
 
-            # TODO: Check channel subscription.
+            approved_channels = r_json['channels'].split()
+            if NOTIFICATION_CHANNEL not in approved_channels:
+                qs_dict = {'url': url, 'alert': 'insufficient-channels'}
+                qs = urlencode(qs_dict)
+                redirect(f'/link?{qs}')
 
             now_dt = rfc3339.now()
             job = Job(job_id=generate_id(),
@@ -385,7 +393,8 @@ def construct_app(dao, token_decoder,
         if not url:
             abort(400, 'Please specify a url.')
 
-        state, nonce, oidc_login_uri = construct_oidc_request('openid', 'offline_access', 'contact')
+        state, nonce, oidc_login_uri = construct_oidc_request('openid', 'offline_access', 'contact',
+                                                              channels=['link_notifications'])
 
         session_handler.set_oidc_data(state, nonce,
                                       action='notify',

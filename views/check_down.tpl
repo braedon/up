@@ -10,7 +10,9 @@
     % if defined('alert') and alert:
     <div class="section alert">
       % if alert == 'insufficient-scope':
-      <p>Offline Access and Contact permissions are required for notifications</p>
+      <p>The Offline Access and Contact permissions are required for notifications</p>
+      % elif alert == 'insufficient-channels':
+      <p>The Link Notifications channel is required for notifications</p>
       % end
     </div>
     % end
