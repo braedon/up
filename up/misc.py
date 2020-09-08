@@ -1,11 +1,11 @@
 import hashlib
-import functools
 import secrets
 import textwrap
 
 from base64 import urlsafe_b64encode
 from bottle import HTTPResponse, response, template
 from bottle import abort as bottle_abort
+from utils.security_headers import SecurityHeadersPlugin
 
 ID_BYTES = 16
 HASH_BYTES = 16
@@ -40,83 +40,13 @@ def set_headers(r, headers):
         response.headers.update(headers)
 
 
-class SecurityHeadersPlugin(object):
-    name = 'security_headers'
-    api = 2
-
-    def __init__(self, extra_form_targets=None):
-        extra_form_targets = extra_form_targets or []
-        extra_form_targets_str = ' ' + ' '.join(extra_form_targets)
-
-        self.headers = {
-            'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-            'Expect-CT': 'max-age=86400, enforce',
-            'Content-Security-Policy': '; '.join([
-                # Fetch directives
-                "default-src 'none'",
-                "img-src 'self'",
-                "script-src 'self'",
-                "style-src 'self' https://necolas.github.io https://fonts.googleapis.com",
-                "font-src https://fonts.gstatic.com",
-                "manifest-src 'self'",
-                # Document directives
-                "base-uri 'self'",
-                # Navigation directives
-                f"form-action 'self' {extra_form_targets_str}",
-                "frame-ancestors 'none'",
-                # Other directives
-                "block-all-mixed-content",
-            ]),
-            'Feature-Policy': '; '.join([
-                "accelerometer 'none'",
-                "ambient-light-sensor 'none'",
-                "autoplay 'none'",
-                "battery 'none'",
-                "camera 'none'",
-                "display-capture 'none'",
-                "document-domain 'none'",
-                "encrypted-media 'none'",
-                "execution-while-not-rendered 'none'",
-                "execution-while-out-of-viewport 'none'",
-                "fullscreen 'none'",
-                "geolocation 'none'",
-                "gyroscope 'none'",
-                "layout-animations 'none'",
-                "legacy-image-formats 'none'",
-                "magnetometer 'none'",
-                "microphone 'none'",
-                "midi 'none'",
-                "navigation-override 'none'",
-                "oversized-images 'none'",
-                "payment 'none'",
-                "picture-in-picture 'none'",
-                "publickey-credentials 'none'",
-                "sync-xhr 'none'",
-                "usb 'none'",
-                "wake-lock 'none'",
-                "xr-spatial-tracking 'none'",
-            ]),
-            'Referrer-Policy': 'no-referrer, strict-origin-when-cross-origin',
-            'X-Frame-Options': 'deny',
-            'X-XSS-Protection': '1; mode=block',
-            'X-Content-Type-Options': 'nosniff',
-        }
-
-    def apply(self, callback, route=None):
-
-        @functools.wraps(callback)
-        def wrapper(*args, **kwargs):
-            r = callback(*args, **kwargs)
-            set_headers(r, self.headers)
-            return r
-
-        return wrapper
-
-    def __call__(self, callback):
-        return self.apply(callback)
-
-
-security_headers = SecurityHeadersPlugin()
+csp_updates = {'img-src': "'self'",
+               'script-src': "'self'",
+               'style-src': "'self' https://necolas.github.io https://fonts.googleapis.com",
+               'font-src': "https://fonts.gstatic.com",
+               'manifest-src': "'self'",
+               'form-action': "'self'"}
+security_headers = SecurityHeadersPlugin(csp_updates=csp_updates)
 
 
 @security_headers

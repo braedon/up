@@ -11,7 +11,7 @@ from urllib.parse import urlparse, urljoin, urlencode
 from utils.param_parse import parse_params, boolean_param, string_param
 
 from .dao import Job
-from .misc import abort, html_default_error_hander, generate_id, hash_urlsafe, SecurityHeadersPlugin
+from .misc import abort, html_default_error_hander, generate_id, hash_urlsafe, security_headers
 from .session import SessionHandler
 
 
@@ -63,14 +63,17 @@ def construct_app(dao, token_decoder,
 
     app = Bottle()
     app.default_error_handler = html_default_error_hander
+
+    app.install(security_headers)
+
+    # Construct more permissive Content Security Policies for use in certain endpoints.
     # Need to allow submitting forms to the OIDC provider, as some browsers consider redirects after
     # form submissions to be targets. We redirect to the OIDC provider when submitting the
     # "notify me" form to request/ensure contact permissions are set.
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/form-action
-    extra_form_targets = [oidc_iss]
+    csp_form_action = f"'self' {oidc_iss}"
     if testing_mode:
-        extra_form_targets.append('http://localhost:*')
-    app.install(SecurityHeadersPlugin(extra_form_targets=extra_form_targets))
+        csp_form_action += ' http://localhost:*'
 
     initial_delay = timedelta(minutes=initial_delay_minutes)
 
@@ -354,7 +357,7 @@ def construct_app(dao, token_decoder,
 
         redirect(continue_url or DEFAULT_CONTINUE_URL)
 
-    @app.get('/link')
+    @app.get('/link', sh_csp_updates={'form-action': csp_form_action})
     @session_handler.require_session()
     def check():
         csrf = request.session['csrf']
