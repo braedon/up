@@ -3,7 +3,7 @@ import requests
 import rfc3339
 import time
 
-from bottle import Bottle, request, static_file, template, redirect
+from bottle import Bottle, request, response, static_file, template, redirect
 from datetime import timedelta
 from jwt.exceptions import InvalidTokenError
 from urllib.parse import urlparse, urljoin, urlencode
@@ -30,6 +30,8 @@ TD_PERIODS = [
 ]
 
 NOTIFICATION_CHANNEL = 'link_notifications'
+
+SERVER_READY = True
 
 
 def td_format(td_object):
@@ -126,9 +128,17 @@ def construct_app(dao, token_decoder,
 
         return state, nonce, url
 
-    @app.get('/status')
-    def status():
-        return 'OK'
+    @app.get('/-/live')
+    def live():
+        return 'Live'
+
+    @app.get('/-/ready')
+    def ready():
+        if SERVER_READY:
+            return 'Ready'
+        else:
+            response.status = 503
+            return 'Unavailable'
 
     @app.get('/')
     @session_handler.maybe_session()
