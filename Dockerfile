@@ -3,7 +3,7 @@ FROM python:3.8-slim
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y git \
+    && apt-get install -y git mime-support \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
