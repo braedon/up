@@ -4,7 +4,7 @@
 # NOTE: This won't override a previously installed version of Bottle,
 #       so remove first with:
 #       > pip3 uninstall bottle
-git+git://github.com/braedon/bottle@improve-wsgi-error-handling-013#egg=bottle
+git+git://github.com/braedon/bottle@master#egg=bottle
 click==7.1.2
 cryptography==3.1.1 # Used by pyjwt for RSA256
 gevent==20.9.0
