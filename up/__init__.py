@@ -161,17 +161,22 @@ def construct_app(dao, token_decoder,
     def robots():
         return static_file('robots.txt', root='static')
 
-    # Favicon stuff generated at:
-    # https://favicon.io/favicon-generator/?t=u%3F&ff=Roboto+Slab&fs=100&fc=%23444&b=rounded&bc=%23F9F9F9
-    @app.get('/favicon.ico')
-    def icon():
-        return static_file('favicon.ico', root='static')
-
     @app.get('/site.webmanifest')
     def manifest():
         return static_file('site.webmanifest', root='static')
 
-    @app.get('/<filename>.png')
+    # Set CORP to allow Firefox for Android to load icons.
+    # Firefox for Android seems to consider the icon loader a different origin.
+    #
+    # Favicon stuff generated at:
+    # https://favicon.io/favicon-generator/?t=u%3F&ff=Roboto+Slab&fs=100&fc=%23444&b=rounded&bc=%23F9F9F9
+    @app.get('/favicon.ico',
+             sh_updates={'Cross-Origin-Resource-Policy': 'cross-origin'})
+    def icon():
+        return static_file('favicon.ico', root='static')
+
+    @app.get('/<filename>.png',
+             sh_updates={'Cross-Origin-Resource-Policy': 'cross-origin'})
     def root_pngs(filename):
         return static_file(f'{filename}.png', root='static')
 
