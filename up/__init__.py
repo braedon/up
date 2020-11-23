@@ -483,7 +483,7 @@ def run_worker(dao, delay_multiplier, timeout_seconds,
             except ValueError:
                 r_json = None
 
-            if r_json and r_json.get('code') == 'outbound-message-id-exists':
+            if r_json and r_json.get('error') == 'outbound_message_id_exists':
                 log.warning('[%(job_id)s] Message already sent.',
                             {'job_id': job_id})
                 return
@@ -499,9 +499,9 @@ def run_worker(dao, delay_multiplier, timeout_seconds,
             except ValueError:
                 r_json = None
 
-            if r_json and r_json.get('code') in ('contact-forbidden', 'contact-channel-forbidden'):
-                log.warning('[%(job_id)s] Message send forbidden: %(code)s',
-                            {'job_id': job_id, 'code': r_json['code']})
+            if r_json and r_json.get('error') in ('contact_forbidden', 'contact_channel_forbidden'):
+                log.warning('[%(job_id)s] Message send forbidden: %(error)s',
+                            {'job_id': job_id, 'error': r_json['error']})
                 return  # Nothing more we can do.
 
             log.warning('[%(job_id)s] Message send endpoint returned unexpected 403 Forbidden.',
