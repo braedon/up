@@ -97,6 +97,7 @@ class SecurityHeadersPlugin(object):
         'fullscreen': '()',
         'geolocation': '()',
         'gyroscope': '()',
+        'interest-cohort': '()',
         'layout-animations': '()',
         'legacy-image-formats': '()',
         'magnetometer': '()',
